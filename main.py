@@ -21,7 +21,7 @@ model = Conv1dTextClassifier(num_classes=2).to(device)
 print(model)
 
 criterion = tc.nn.CrossEntropyLoss()
-optimizer = tc.optim.Adadelta(model.parameters(), lr=0.001)
+optimizer = tc.optim.Adadelta(model.parameters(), lr=1.0)
 
 try:
     model.load_state_dict(tc.load("model.pth"))
