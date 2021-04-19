@@ -11,11 +11,11 @@ class IMDBDatasetEmbedded(tc.utils.data.IterableDataset):
         self.root = root
         self.tokenizer = tt.data.utils.get_tokenizer('basic_english')
         self.vocab = self.get_vocab(self.root, self.tokenizer)
+        self.vectors = self.get_vectors()
         self.dataset = tc.utils.data.BufferedShuffleDataset(
             tt.datasets.IMDB(split='train' if train else 'test'),
             buffer_size=50000
         )
-        self.n_tokens = 400
 
     @staticmethod
     def get_vocab(root, tokenizer):
@@ -25,21 +25,27 @@ class IMDBDatasetEmbedded(tc.utils.data.IterableDataset):
         for y, X in train_iter:
             counter.update(tokenizer(X))
 
-        vectors = tt.vocab.FastText(language='en')
-        vocab = tt.vocab.Vocab(counter, vectors=vectors)
+        vocab = tt.vocab.Vocab(counter)
         return vocab
 
-    def text_pipeline(self, text, tokenizer, vocab):
-        vectors = np.stack([vocab.vectors[vocab.stoi[token]] for token in tokenizer(text)], axis=0)
-        vectors = vectors[0:self.n_tokens]
-        pad_len = self.n_tokens-len(vectors)
+    @staticmethod
+    def get_vectors():
+        vectors = tt.vocab.FastText(language='en')
+        return vectors
+
+    @staticmethod
+    def text_pipeline(self, text, tokenizer, vocab, vectors, n_tokens=400):
+        vectors = np.stack([vectors[vocab.stoi[token]] for token in tokenizer(text)], axis=0)
+        vectors = vectors[0:n_tokens]
+        pad_len = n_tokens-len(vectors)
         pad_shape = (pad_len, 300)
         if pad_len > 0:
             vectors = np.concatenate([vectors, np.zeros(dtype=np.float32, shape=pad_shape)], axis=0)
         vectors = np.transpose(vectors) # convert to NCH format.
         return vectors
 
-    def label_pipeline(self, y):
+    @staticmethod
+    def label_pipeline(y):
         d = {
             "neg": 0,
             "pos": 1
@@ -48,7 +54,7 @@ class IMDBDatasetEmbedded(tc.utils.data.IterableDataset):
 
     def __iter__(self):
         fn = lambda X, y: (
-            self.text_pipeline(X, self.tokenizer, self.vocab),
+            self.text_pipeline(X, self.tokenizer, self.vocab, self.vectors),
             self.label_pipeline(y)
         )
         return (fn(X,y) for y, X in self.dataset.__iter__())
