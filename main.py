@@ -2,6 +2,7 @@ import torch as tc
 from datasets import IMDBDatasetEmbedded
 from classifier import Conv1dTextClassifier
 from runner import Runner
+import numpy as np
 
 # IMDB with preprocessing by embedding words using FastText.
 training_data = IMDBDatasetEmbedded(root="data", train=True)
@@ -30,7 +31,25 @@ try:
 except Exception:
     print('no checkpoint found. training from scratch...')
 
-runner = Runner(max_epochs=100, verbose=True)
+runner = Runner(max_epochs=1, verbose=True)
 runner.run(model, train_dataloader, test_dataloader, device, criterion, optimizer)
 print("Done!")
 
+
+tokenizer = training_data.tokenizer
+vocab = training_data.vocab
+n_tokens = 400
+hypothetical_review = "The movie was good, but there were some over the top moments especially in the action scenes. Overall B+."
+vectors = np.stack([vocab.vectors[vocab.stoi[token]] for token in tokenizer(hypothetical_review)], axis=0)
+vectors = vectors[0:n_tokens]
+pad_len = n_tokens-len(vectors)
+pad_shape = (pad_len, 300)
+if pad_len > 0:
+    vectors = np.concatenate([vectors, np.zeros(dtype=np.float32, shape=pad_shape)], axis=0)
+vectors = np.transpose(vectors) # convert to NCH format.
+vectors = tc.from_numpy(vectors)
+model.eval()
+logits = model.forward(tc.unsqueeze(vectors, dim=0))
+probs = tc.nn.Softmax(dim=-1)(logits)
+print(hypothetical_review)
+print(probs)

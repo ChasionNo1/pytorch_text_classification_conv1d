@@ -26,7 +26,7 @@ class Runner:
         return
 
     def evaluate_epoch(self, model, dataloader, device, loss_fn):
-        num_test_examples = len(dataloader.dataset)
+        num_test_examples = 0
         test_loss, correct = 0, 0
         with tc.no_grad():
             for X, y in dataloader:
@@ -34,6 +34,7 @@ class Runner:
                 pred = model(X)
                 test_loss += len(X) * loss_fn(pred, y).item()
                 correct += (pred.argmax(1) == y).type(tc.float).sum().item()
+                num_test_examples += len(X)
         test_loss /= num_test_examples
         correct /= num_test_examples
         return {
