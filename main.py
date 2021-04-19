@@ -1,12 +1,21 @@
 import torch as tc
+import torchtext as tt
+from utils import get_tokenizer, get_vectors, text_pipeline, label_pipeline, ProcessedIterableDataset
 from functools import partial
-from datasets import IMDBDatasetEmbedded
 from classifier import Conv1dTextClassifier
 from runner import Runner
 
 # Datasets.
-training_data = IMDBDatasetEmbedded(root='data', train=True)
-test_data = IMDBDatasetEmbedded(root='data', train=False)
+training_data = tt.datasets.IMDB(root='data', split='train')
+test_data = tt.datasets.IMDB(root='data', split='test')
+
+# Preprocessing.
+tokenizer = get_tokenizer()
+vectors = get_vectors()
+text_preprocessing = partial(text_pipeline, tokenizer=tokenizer, vectors=vectors)
+dataset_map = lambda y,x: (text_preprocessing(x), label_pipeline(y))
+training_data = ProcessedIterableDataset(training_data, dataset_map)
+test_data = ProcessedIterableDataset(test_data, dataset_map)
 
 # Dataloaders.
 batch_size = 50
@@ -17,7 +26,7 @@ test_dataloader = tc.utils.data.DataLoader(test_data, batch_size=batch_size)
 device = "cuda" if tc.cuda.is_available() else "cpu"
 print("Using {} device".format(device))
 
-# Model from Yoon Kim, 2014 - 'Convolutional Neural Networks for Text Classification'.
+# Model from Yoon Kim, 2014 - 'Convolutional Neural Networks for Sentence Classification'.
 model = Conv1dTextClassifier(num_classes=2).to(device)
 print(model)
 
@@ -39,11 +48,6 @@ print("All done!")
 # Demo.
 model.eval()
 hypothetical_review = "The movie was good, but there were some over the top moments especially in the action scenes. Overall B+."
-
-tokenizer = training_data.tokenizer
-vocab = training_data.vocab
-text_preprocessing = partial(training_data.text_pipeline, tokenizer=tokenizer, vocab=vocab)
-
 x = tc.from_numpy(text_preprocessing(hypothetical_review))
 y_logits = model.forward(tc.unsqueeze(x, dim=0))
 y_probs = tc.nn.Softmax(dim=-1)(y_logits)
