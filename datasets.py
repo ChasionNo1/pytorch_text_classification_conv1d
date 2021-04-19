@@ -3,6 +3,8 @@ import torchtext as tt
 from collections import Counter
 import numpy as np
 
+# it may be better to switch to using collate_fn as in tutorial, but this looks cleaner.
+# keeping it for now.
 
 class IMDBDatasetEmbedded(tc.utils.data.IterableDataset):
     def __init__(self, root, train):
@@ -34,6 +36,7 @@ class IMDBDatasetEmbedded(tc.utils.data.IterableDataset):
         pad_shape = (pad_len, 300)
         if pad_len > 0:
             vectors = np.concatenate([vectors, np.zeros(dtype=np.float32, shape=pad_shape)], axis=0)
+        vectors = np.transpose(vectors) # convert to NCH format.
         return vectors
 
     def label_pipeline(self, y):

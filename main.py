@@ -20,7 +20,7 @@ print("Using {} device".format(device))
 model = Conv1dTextClassifier(num_classes=2).to(device)
 print(model)
 
-criterion = tc.nn.BCELoss()
+criterion = tc.nn.CrossEntropyLoss()
 optimizer = tc.optim.Adadelta(model.parameters(), lr=0.001)
 
 try:

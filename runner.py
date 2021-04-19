@@ -10,9 +10,6 @@ class Runner:
         for batch_idx, (X, y) in enumerate(train_dataloader, 1):
             X, y = X.to(device), y.to(device)
 
-            print(X)
-            print(y)
-
             # Forward
             logits = model(X)
             loss = loss_fn(logits, y)
@@ -24,7 +21,7 @@ class Runner:
 
             if self.verbose and batch_idx % 100 == 0:
                 loss = loss.item()
-                print(f"loss: {loss:>7f}  [{batch_idx:>5d}/{len(train_dataloader):>5d}]")
+                print("batch: {}... loss: {}".format(batch_idx, loss))
 
         return
 

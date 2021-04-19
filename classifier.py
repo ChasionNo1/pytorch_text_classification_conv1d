@@ -21,11 +21,11 @@ class Conv1dTextClassifier(tc.nn.Module):
         features = []
         for l in range(len(self.conv_kernel_sizes)):
             c = self.convs[l](x)
-            m = c.max(dim=-2)
+            m, _ = tc.max(c, dim=-1) # [B, C, T] -> [B, C].
             features.append(m)
 
-        features = tc.cat(features, dim=-1)
-        d = self.dropout(features)
+        vec = tc.cat(tuple(features), dim=-1)
+        d = self.dropout(vec)
         logits = self.fc(d)
         return logits
 
