@@ -1,4 +1,5 @@
 import torch as tc
+from utils import get_dataloaders
 
 
 class Runner:
@@ -42,18 +43,19 @@ class Runner:
             "loss": test_loss
         }
 
-    def run(self, model, train_dataloader, test_dataloader, device, loss_fn, optimizer):
-        print('running!!')
+    def run(self, dataset_map_fn, batch_size, model, device, criterion, optimizer):
 
         for epoch in range(1, self.max_epochs+1):
             if self.verbose:
                 print(f"Epoch {epoch}\n-------------------------------")
 
+            train_dataloader, test_dataloader = get_dataloaders(map_fn=dataset_map_fn, batch_size=batch_size)
+
             model.train() # turn batchnorm, dropout, etc. to train mode.
-            self.train_epoch(model, train_dataloader, optimizer, device, loss_fn)
+            self.train_epoch(model, train_dataloader, optimizer, device, criterion)
 
             model.eval()  # turn batchnorm, dropout, etc. to eval mode.
-            test_eval_dict = self.evaluate_epoch(model, test_dataloader, device, loss_fn)
+            test_eval_dict = self.evaluate_epoch(model, test_dataloader, device, criterion)
             test_accuracy = test_eval_dict['accuracy'] * 100
             test_loss = test_eval_dict['loss']
             if self.verbose:
